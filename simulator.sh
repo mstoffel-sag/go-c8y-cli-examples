@@ -1,11 +1,24 @@
 #!/bin/bash
 type=sts_demo
+batchId=2
+device="FGL1 M1 1"
+accountId="0016800000IYqNmAAL"
+batchEventCount=20
+
 send_measurements () {
     echo "Creating measurements"
-    c8y util repeat --infinite |
-    c8y devices list --type "$DEVICE_TYPE" --includeAll --delayBefore 10s |
-    c8y measurements create --template ./values.jsonnet --select "source.id,**.value,**.unit" -f
+    c8y util repeat --infinite | 
+    c8y devices list --name "$device" --includeAll --delayBefore 3s |
+    c8y measurements create --template ./values.jsonnet --select "source.id,batchId,**.value,**.unit" -f
 }
+send_events () {
+    echo "Creating events"
+    c8y devices list  --name "FGL1 M1 1" | c8y events create --type c8y_StartProduction  --text "Production started for Customer $accountId" --template "{c8y_SFAccountId:'$accountId'}" -f
+    c8y util repeat $batchEventCount | 
+    c8y devices list --name "$device" --delayBefore 3s | c8y events create  --templateVars "batchId=$batchId" --template ./event.jsonnet -f  
+    c8y devices list  --name "FGL1 M1 1" | c8y events create --type c8y_StopProduction  --text "Production stopped for Customer $accountId" --template "{c8y_SFAccountId:'$accountId'}" -f
+}
+
 
 
 
